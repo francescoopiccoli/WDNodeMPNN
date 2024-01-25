@@ -1,0 +1,16 @@
+.eggs/pytest_runner-6.0.0-py3.8.egg/
+.vscode/
+__pycache__/
+gwp/
+k-gnn/
+k_gnn.egg-info/
+processed/
+raw/
+result/
+wandb/
+.ipynb_checkpoints
+runs
+*.pt
+*.pth
+*.png
+*.pdf
