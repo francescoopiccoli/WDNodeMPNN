@@ -1,33 +1,23 @@
-# %% Packages
-import numpy as np
 import torch
 from featurization import poly_smiles_to_graph
 import pandas as pd
-import networkx as nx
-from torch_geometric.utils import to_networkx
 import random
 from torch_geometric.loader import DataLoader
 from WDNodeMPNN import WDNodeMPNN
 import os
-# %% Hyperparameters
-batch_size = 64
-device = 'cpu'
+import tqdm
 
+# %% Hyperparameters
+device = 'cpu'
 hyper_params = {
     'batch_size': 64,
     'epochs': 100,
     'hidden_dimension': 300,
     'learning_rate': 1e-3,
-    'type of run': 'Only Supervised Training'
 }
-
 
 # %% Call data
 df = pd.read_csv('../Data/dataset-poly_chemprop.csv')
-# %% Lets create PyG data objects
-
-# uncomment if graphs_list.pt does not exist
-# Here we turn all smiles tring and featurize them into graphs and put them in a list: graphs_list
 
 graphs = []
 # check if graphs_list.pt exists
@@ -46,13 +36,11 @@ if not os.path.isfile('Graphs_list.pt'):
 else:
     graphs = torch.load('Graphs_list.pt')
 
-# %% Create training, self supervised and test sets
-
 # shuffle graphs
 random.seed(12345)
 data_list_shuffle = random.sample(graphs, len(graphs))
 
-# take 80-20 split for trainig -  test data
+# take 80-20 split for training - test data
 train_datalist = data_list_shuffle[:int(0.8*len(data_list_shuffle))]
 test_datalist = data_list_shuffle[int(0.8*len(data_list_shuffle)):]
 
@@ -65,22 +53,14 @@ num_edge_features = train_datalist[0].num_edge_features
 print(f'Number of node features: {num_node_features}')
 print(f'Number of edge features:{num_edge_features} ')
 
-# plot a random graph
-idx = np.random.randint(0, len(data_list_shuffle))
-vis_graph = data_list_shuffle[idx]
-G = to_networkx(vis_graph, to_undirected=True)
-nx.draw_networkx(G, with_labels=True)
-
 
 batch_size = hyper_params['batch_size']
-# %%batch them
+
 train_loader = DataLoader(dataset=train_datalist,
                           batch_size=batch_size, shuffle=True)
 test_loader = DataLoader(dataset=test_datalist,
                          batch_size=batch_size, shuffle=False)
 
-# create a train and test function to train the model
-# %% Create an instance of the WMPNN model called from models.py
 
 epochs = hyper_params['epochs']
 hidden_dimension = hyper_params['hidden_dimension']
@@ -89,17 +69,13 @@ model = WDNodeMPNN(num_node_features, num_edge_features, hidden_dim=hidden_dimen
 model.to(device)
 print(model)
 
-# %% Train the model
-
 optimizer = torch.optim.Adam(model.parameters(), lr=hyper_params['learning_rate'])
 criterion = torch.nn.MSELoss()
 
 def train(loader, label):
     model.train()
     total_loss = 0.0
-    # Iterate in batches over the training dataset.
-    for step, data in enumerate(loader):
-        # Perform a single forward pass.
+    for data in loader:
         out = model(data)
         # Calculate the loss based on the specified label.
         if label == 0:
@@ -107,8 +83,8 @@ def train(loader, label):
         elif label == 1:
             loss = criterion(out, data.y2.float())
 
-        loss.backward()  # Derive gradients.
-        optimizer.step()  # Update parameters based on gradients.
+        loss.backward()  
+        optimizer.step()
         optimizer.zero_grad()
 
         total_loss += loss.item()
@@ -118,13 +94,9 @@ def train(loader, label):
     
 def test(loader, label):
     model.eval()
-    # Iterate in batches over the training/test dataset.
     total_loss = 0
-    for step, data in enumerate(loader):
-        # Perform a single forward pass.
+    for data in loader:
         out = model(data)
-        # print(out)
-        # print(data.y)
         if label == 0:
             loss = criterion(out, data.y1.float())
         elif label == 1:
@@ -134,12 +106,14 @@ def test(loader, label):
     return total_loss / len(loader)
 
 
-for epoch in range(epochs):
-    model, train_loss= train(train_loader, 1)
-    test_loss = test(test_loader, 1)
+# %% Train model
+for epoch in tqdm.tqdm(range(epochs)):
+    model, train_loss = train(train_loader, 0)
+    test_loss = test(test_loader, 0)
+    print(f'Epoch: {epoch}, Train Loss: {train_loss:.4f}, Test Loss: {test_loss:.4f}')
 
-    print(
-        f'Epoch: {epoch}, Train Loss: {train_loss:.4f}, Test Loss: {test_loss:.4f}')
+# %% Save model
+torch.save(model.state_dict(), 'model.pt')
 
 
 
@@ -343,3 +317,4 @@ Create edge update message passing matrix
 # print(torch.equal(inc_edges_to_atom_matrix, inc_edges_to_atom_dense))
 
 # %%
+

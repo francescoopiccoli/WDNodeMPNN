@@ -2,19 +2,12 @@
 '''
 Here I turn my own implementation of the featurization into a function. Input is an adjusted smiles string output is a PyG Data object (graph) with atom and bond weights
 '''
-
-# %% Introduction
-
 import helper as ft
 from rdkit import Chem
 from rdkit.Chem import Descriptors
 from copy import deepcopy
 from torch_geometric.data import Data
 import torch
-
-
-# %% Make featurization function
-
 
 def poly_smiles_to_graph(poly_input, poly_label1, poly_label2):
     '''
