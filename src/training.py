@@ -11,7 +11,7 @@ from WDNodeMPNN import WDNodeMPNN
 import os
 # %% Hyperparameters
 batch_size = 64
-device = 'cpu'
+device = 'mps'
 
 hyper_params = {
     'batch_size': 64,
