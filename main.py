@@ -83,9 +83,9 @@ for epoch in tqdm.tqdm(range(epochs)):
         pred, ea, ip = infer_by_dataloader(test_loader, model, device)
 
         if labels[property] == 0:
-            visualize_results(pred, ea, label='ea', save_folder=f'Results/{model_save_name}/epoch{epoch}.pt')
+            visualize_results(pred, ea, label='ea', save_folder=f'Results/{model_save_name}', epoch=epoch)
         else:
-            visualize_results(pred, ip, label='ip', save_folder=f'Results/{model_save_name}/epoch{epoch}.pt')
+            visualize_results(pred, ip, label='ip', save_folder=f'Results/{model_save_name}', epoch=epoch)
 
         torch.save(model.state_dict(), f'Models/{model_save_name}.pt')
         
