@@ -2,14 +2,14 @@
 '''
 Here I turn my own implementation of the featurization into a function. Input is an adjusted smiles string output is a PyG Data object (graph) with atom and bond weights
 '''
-import helper as ft
+import src.featurization_helper as ft
 from rdkit import Chem
 from rdkit.Chem import Descriptors
 from copy import deepcopy
 from torch_geometric.data import Data
 import torch
 
-def poly_smiles_to_graph(poly_input, poly_label1, poly_label2):
+def poly_smiles_to_graph(poly_strings, poly_labels_EA, poly_labels_IP):
     '''
     Turns adjusted polymer smiles string into PyG data objects
     '''
@@ -19,12 +19,12 @@ def poly_smiles_to_graph(poly_input, poly_label1, poly_label2):
     # mol is a tuple of (RDKit Mol object, list of bonds weights rules)
     mol = (
         make_polymer_mol(
-            smiles=poly_input.split("|")[0], # smiles -> [*:1]c1cc(F)c([*:2])cc1F.[*:3]c1c(O)cc(O)c([*:4])c1O
+            smiles=poly_strings.split("|")[0], # smiles -> [*:1]c1cc(F)c([*:2])cc1F.[*:3]c1c(O)cc(O)c([*:4])c1O
             keep_h=False, 
             add_h=False,  
-            fragment_weights=poly_input.split("|")[1:-1]  # fraction of each fragment -> [0.5, 0.5]
+            fragment_weights=poly_strings.split("|")[1:-1]  # fraction of each fragment -> [0.5, 0.5]
         ), 
-        poly_input.split("<")[1:] #poly_input.split("<")[1:] split the string at < and take everything after the first <, tells the weight of each bond
+        poly_strings.split("<")[1:] #poly_input.split("<")[1:] split the string at < and take everything after the first <, tells the weight of each bond
     ) 
 
     # Set some variables needed later
@@ -230,7 +230,7 @@ def poly_smiles_to_graph(poly_input, poly_label1, poly_label2):
 
     # create PyG Data object
     graph = Data(x=X, edge_index=edge_index, edge_attr=edge_attr,
-                 y1=poly_label1, y2=poly_label2, node_weight=node_weight, edge_weight=edge_weights) # , M_ensemble=M_ensemble
+                 y_EA=poly_labels_EA, y_IP=poly_labels_IP, node_weight=node_weight, edge_weight=edge_weights) # , M_ensemble=M_ensemble
 
     return graph
 
