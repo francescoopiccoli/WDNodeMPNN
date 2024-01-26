@@ -1,17 +1,3 @@
-import math
-from typing import List
-
-import numpy as np
-import torch
-from matplotlib import pyplot as plt
-from scipy.stats import gaussian_kde
-from sklearn.metrics import r2_score, mean_squared_error
-
-from featurization import poly_smiles_to_graph
-import pandas as pd
-import random
-from torch_geometric.loader import DataLoader
-from WDNodeMPNN import WDNodeMPNN
 import os
 import pandas as pd
 import torch
@@ -82,13 +68,13 @@ def test(model, loader, label, criterion):
 
         total_loss += loss.item()
     return total_loss / len(loader)
-
-# %% Train model
-for epoch in tqdm.tqdm(range(epochs)):
-    visualize_models(test_loader, [model], 0)
-    model, train_loss = train(train_loader, 0)
-    test_loss = test(test_loader, 0)
-    print(f'Epoch: {epoch}, Train Loss: {train_loss:.4f}, Test Loss: {test_loss:.4f}')
-
-# %% Save model
-torch.save(model.state_dict(), 'model.pt')
+#
+# # %% Train model
+# for epoch in tqdm.tqdm(range(epochs)):
+#     visualize_models(test_loader, [model], 0)
+#     model, train_loss = train(train_loader, 0)
+#     test_loss = test(test_loader, 0)
+#     print(f'Epoch: {epoch}, Train Loss: {train_loss:.4f}, Test Loss: {test_loss:.4f}')
+#
+# # %% Save model
+# torch.save(model.state_dict(), 'model.pt')
