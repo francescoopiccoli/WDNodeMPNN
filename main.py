@@ -1,7 +1,8 @@
 import torch
 import random
+import time
 from torch_geometric.loader import DataLoader
-
+import string
 from src.Analyse_Results import visualize_results
 from src.WDNodeMPNN import WDNodeMPNN
 import os
@@ -51,56 +52,42 @@ test_loader = DataLoader(dataset=test_datalist, batch_size=batch_size, shuffle=F
 
 hidden_dimension = hyper_params['hidden_dimension']
 
-model = WDNodeMPNN(num_node_features, num_edge_features, hidden_dim=hidden_dimension)
-model_name = ''.join(random.choices('abcdefghijklmnopqrstuvwxyz', k=10))
 
+model = WDNodeMPNN(num_node_features, num_edge_features, hidden_dim=hidden_dimension)
+random.seed(time.time())
+model_name = ''.join(random.choice(string.ascii_letters + string.digits) for _ in range(8))
 model.to(device)
+print(model_name)
 print(model)
+
 
 optimizer = torch.optim.Adam(model.parameters(), lr=hyper_params['learning_rate'])
 criterion = torch.nn.MSELoss()
 epochs = hyper_params['epochs']
 property = 'EA'
-model_save_name = f'{model_name}_{property}.pt'
-
-should_train = True
-should_infer = False
-
-if should_train:
-    # %% Train model
-    for epoch in tqdm.tqdm(range(epochs)):
-        model, train_loss = train(model, train_loader, label=labels[property], optimizer=optimizer, criterion=criterion)
-        test_loss = test(model, test_loader, label=labels[property], criterion=criterion)
-
-        print(f'Epoch: {epoch}, Train Loss: {train_loss:.4f}, Test Loss: {test_loss:.4f}')
-
-        # save model every 10 epochs
-        if epoch % 10 == 0:
-            os.makedirs('Models', exist_ok=True)
-            os.makedirs('Results', exist_ok=True)
-
-            pred, ea, ip = infer_by_dataloader(test_loader, model, device)
-
-            if labels[property] == 0:
-                visualize_results(pred, ea, label='ea', save_folder=f'Results/{model_save_name}')
-            else:
-                visualize_results(pred, ip, label='ip', save_folder=f'Results/{model_save_name}')
-
-            torch.save(model.state_dict(), f'Models/{model_save_name}.pt')
-            
-    # save latest model
-    torch.save(model.state_dict(), f'Models/{model_save_name}.pt')
+model_save_name = f'{model_name}_{property}'
 
 
-if should_infer:
-    df = pd.read_csv("Data/dataset-poly_chemprop.csv")
-    df = df[0:100]
+# %% Train model
+for epoch in tqdm.tqdm(range(epochs)):
+    model, train_loss = train(model, train_loader, label=labels[property], optimizer=optimizer, criterion=criterion)
+    test_loss = test(model, test_loader, label=labels[property], criterion=criterion)
 
-    df.at[5, 'poly_chemprop_input'] = "test fault"
+    print(f'Epoch: {epoch}, Train Loss: {train_loss:.4f}, Test Loss: {test_loss:.4f}')
 
-    smiles = df['poly_chemprop_input'].tolist()
-    ea = df['EA vs SHE (eV)'].tolist()
-    ip = df['IP vs SHE (eV)'].tolist()
+    # save model every 20 epochs
+    if epoch % 10 == 0:
+        os.makedirs('Models', exist_ok=True)
+        os.makedirs('Results', exist_ok=True)
 
-    res = infer(smiles, ea, ip, 'Models/model_ea.pt', visualize=True)
-    print(res)
+        pred, ea, ip = infer_by_dataloader(test_loader, model, device)
+
+        if labels[property] == 0:
+            visualize_results(pred, ea, label='ea', save_folder=f'Results/{model_save_name}/epoch{epoch}.pt')
+        else:
+            visualize_results(pred, ip, label='ip', save_folder=f'Results/{model_save_name}/epoch{epoch}.pt')
+
+        torch.save(model.state_dict(), f'Models/{model_save_name}.pt')
+        
+# save latest model
+torch.save(model.state_dict(), f'Models/{model_save_name}.pt')
