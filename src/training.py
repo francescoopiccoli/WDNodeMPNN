@@ -5,7 +5,7 @@ import tqdm
 from src.featurization import poly_smiles_to_graph
 
 
-def get_graphs(file_csv = '../Data/dataset-poly_chemprop.csv', file_graphs_list = 'Graphs_list.pt'):
+def get_graphs(file_csv = 'Data/dataset-poly_chemprop.csv', file_graphs_list = 'Data/Graphs_list.pt'):
     graphs = []
     # check if graphs_list.pt exists
     if not os.path.isfile(file_graphs_list):
@@ -68,13 +68,3 @@ def test(model, loader, label, criterion):
 
         total_loss += loss.item()
     return total_loss / len(loader)
-#
-# # %% Train model
-# for epoch in tqdm.tqdm(range(epochs)):
-#     visualize_models(test_loader, [model], 0)
-#     model, train_loss = train(train_loader, 0)
-#     test_loss = test(test_loader, 0)
-#     print(f'Epoch: {epoch}, Train Loss: {train_loss:.4f}, Test Loss: {test_loss:.4f}')
-#
-# # %% Save model
-# torch.save(model.state_dict(), 'model.pt')
