@@ -1,12 +1,14 @@
 import torch
 import random
 from torch_geometric.loader import DataLoader
+
+from src.Analyse_Results import visualize_results
 from src.WDNodeMPNN import WDNodeMPNN
 import os
 import pandas as pd
 import tqdm
 from src.training import get_graphs, train, test
-from src.infer import infer
+from src.infer import infer, infer_by_dataloader
 
 # %% Hyperparameters
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -61,8 +63,8 @@ epochs = hyper_params['epochs']
 property = 'EA'
 model_save_name = f'{model_name}_{property}.pt'
 
-should_train = False
-should_infer = True
+should_train = True
+should_infer = False
 
 if should_train:
     # %% Train model
@@ -74,8 +76,16 @@ if should_train:
 
         # save model every 10 epochs
         if epoch % 10 == 0:
-            if not os.path.isdir('Models'):
-                os.mkdir('Models')
+            os.makedirs('Models', exist_ok=True)
+            os.makedirs('Results', exist_ok=True)
+
+            pred, ea, ip = infer_by_dataloader(test_loader, model, device)
+
+            if labels[property] == 0:
+                visualize_results(pred, ea, label='ea', save_folder=f'Results/{model_save_name}')
+            else:
+                visualize_results(pred, ip, label='ip', save_folder=f'Results/{model_save_name}')
+
             torch.save(model.state_dict(), f'Models/{model_save_name}.pt')
             
     # save latest model
