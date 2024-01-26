@@ -13,7 +13,6 @@ class WDNodeMPNN(nn.Module):
             edge_attr_dim,
             n_message_passing_layers=3,
             hidden_dim=300,
-            dropout_rate=0.1,
             agg_func="mean"
         ):
 

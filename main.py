@@ -1,10 +1,15 @@
 import torch
 import random
+import time
 from torch_geometric.loader import DataLoader
+import string
+from src.Analyse_Results import visualize_results
 from src.WDNodeMPNN import WDNodeMPNN
 import os
+import pandas as pd
 import tqdm
 from src.training import get_graphs, train, test
+from src.infer import infer, infer_by_dataloader
 
 # %% Hyperparameters
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -23,7 +28,7 @@ labels = {
 }
 
 # %% Load data
-graphs = get_graphs()
+graphs = get_graphs(file_csv = 'Data/dataset-poly_chemprop.csv', file_graphs_list = 'Data/Graphs_list.pt')
 
 # shuffle graphs
 random.seed(12345)
@@ -47,17 +52,22 @@ test_loader = DataLoader(dataset=test_datalist, batch_size=batch_size, shuffle=F
 
 hidden_dimension = hyper_params['hidden_dimension']
 
-model = WDNodeMPNN(num_node_features, num_edge_features, hidden_dim=hidden_dimension)
-model_name = ''.join(random.choices('abcdefghijklmnopqrstuvwxyz', k=10))
 
+model = WDNodeMPNN(num_node_features, num_edge_features, hidden_dim=hidden_dimension)
+random.seed(time.time())
+model_name = ''.join(random.choice(string.ascii_letters + string.digits) for _ in range(8))
 model.to(device)
+print(model_name)
 print(model)
+
 
 optimizer = torch.optim.Adam(model.parameters(), lr=hyper_params['learning_rate'])
 criterion = torch.nn.MSELoss()
 epochs = hyper_params['epochs']
 property = 'EA'
-model_save_name = f'{model_name}_{property}.pt'
+model_save_name = f'{model_name}_{property}'
+
+
 # %% Train model
 for epoch in tqdm.tqdm(range(epochs)):
     model, train_loss = train(model, train_loader, label=labels[property], optimizer=optimizer, criterion=criterion)
@@ -65,10 +75,18 @@ for epoch in tqdm.tqdm(range(epochs)):
 
     print(f'Epoch: {epoch}, Train Loss: {train_loss:.4f}, Test Loss: {test_loss:.4f}')
 
-    # save model every 10 epochs
+    # save model every 20 epochs
     if epoch % 10 == 0:
-        if not os.path.isdir('Models'):
-            os.mkdir('Models')
+        os.makedirs('Models', exist_ok=True)
+        os.makedirs('Results', exist_ok=True)
+
+        pred, ea, ip = infer_by_dataloader(test_loader, model, device)
+
+        if labels[property] == 0:
+            visualize_results(pred, ea, label='ea', save_folder=f'Results/{model_save_name}/epoch{epoch}.pt')
+        else:
+            visualize_results(pred, ip, label='ip', save_folder=f'Results/{model_save_name}/epoch{epoch}.pt')
+
         torch.save(model.state_dict(), f'Models/{model_save_name}.pt')
         
 # save latest model
