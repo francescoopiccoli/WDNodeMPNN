@@ -47,8 +47,8 @@ def infer(smiles_list: List[str], ea_list: List[float], ip_list: List[float], mo
 
 
     if visualize:
-        visualize_results(out, np.array(ea_list)[valid_indexes], label='ea', save_folder='../Data/figs')
-        visualize_results(out, np.array(ip_list)[valid_indexes], label='ip', save_folder='../Data/figs')
+        visualize_results(out, np.array(ea_list)[valid_indexes], label='ea', save_folder='Results/figs')
+        visualize_results(out, np.array(ip_list)[valid_indexes], label='ip', save_folder='Results/figs')
 
     pred = np.full(len(smiles_list), None, dtype=object)
     pred[valid_indexes] = out
