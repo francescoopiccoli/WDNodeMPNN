@@ -3,8 +3,10 @@ import random
 from torch_geometric.loader import DataLoader
 from src.WDNodeMPNN import WDNodeMPNN
 import os
+import pandas as pd
 import tqdm
 from src.training import get_graphs, train, test
+from src.infer import infer
 
 # %% Hyperparameters
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -58,18 +60,37 @@ criterion = torch.nn.MSELoss()
 epochs = hyper_params['epochs']
 property = 'EA'
 model_save_name = f'{model_name}_{property}.pt'
-# %% Train model
-for epoch in tqdm.tqdm(range(epochs)):
-    model, train_loss = train(model, train_loader, label=labels[property], optimizer=optimizer, criterion=criterion)
-    test_loss = test(model, test_loader, label=labels[property], criterion=criterion)
 
-    print(f'Epoch: {epoch}, Train Loss: {train_loss:.4f}, Test Loss: {test_loss:.4f}')
+should_train = False
+should_infer = True
 
-    # save model every 10 epochs
-    if epoch % 10 == 0:
-        if not os.path.isdir('Models'):
-            os.mkdir('Models')
-        torch.save(model.state_dict(), f'Models/{model_save_name}.pt')
-        
-# save latest model
-torch.save(model.state_dict(), f'Models/{model_save_name}.pt')
+if should_train:
+    # %% Train model
+    for epoch in tqdm.tqdm(range(epochs)):
+        model, train_loss = train(model, train_loader, label=labels[property], optimizer=optimizer, criterion=criterion)
+        test_loss = test(model, test_loader, label=labels[property], criterion=criterion)
+
+        print(f'Epoch: {epoch}, Train Loss: {train_loss:.4f}, Test Loss: {test_loss:.4f}')
+
+        # save model every 10 epochs
+        if epoch % 10 == 0:
+            if not os.path.isdir('Models'):
+                os.mkdir('Models')
+            torch.save(model.state_dict(), f'Models/{model_save_name}.pt')
+            
+    # save latest model
+    torch.save(model.state_dict(), f'Models/{model_save_name}.pt')
+
+
+if should_infer:
+    df = pd.read_csv("Data/dataset-poly_chemprop.csv")
+    df = df[0:100]
+
+    df.at[5, 'poly_chemprop_input'] = "test fault"
+
+    smiles = df['poly_chemprop_input'].tolist()
+    ea = df['EA vs SHE (eV)'].tolist()
+    ip = df['IP vs SHE (eV)'].tolist()
+
+    res = infer(smiles, ea, ip, 'Models/model_ea.pt', visualize=True)
+    print(res)

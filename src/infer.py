@@ -8,7 +8,7 @@ from tqdm import tqdm
 
 from src.WDNodeMPNN import WDNodeMPNN
 from src.featurization import poly_smiles_to_graph
-from Analyse_Results import visualize_results
+from src.Analyse_Results import visualize_results
 
 def infer(smiles_list: List[str], ea_list: List[float], ip_list: List[float], model, device = None, visualize=False) -> np.ndarray:
     assert type(model) == str or type(model) == WDNodeMPNN
@@ -53,18 +53,4 @@ def infer(smiles_list: List[str], ea_list: List[float], ip_list: List[float], mo
     pred = np.full(len(smiles_list), None, dtype=object)
     pred[valid_indexes] = out
 
-    return pred
-
-
-if __name__ == "__main__":
-    df = pd.read_csv("../Data/dataset-poly_chemprop.csv")
-    df = df[0:100]
-
-    df.at[5, 'poly_chemprop_input'] = "test fault"
-
-    smiles = df['poly_chemprop_input'].tolist()
-    ea = df['EA vs SHE (eV)'].tolist()
-    ip = df['IP vs SHE (eV)'].tolist()
-
-    res = infer(smiles, ea, ip, '../Data/model_ea.pt', visualize=True)
-    print(res)
+    return pred    
