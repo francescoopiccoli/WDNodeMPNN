@@ -1,8 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torch_geometric.nn import MessagePassing
-from torch_geometric.nn import global_mean_pool
+from torch_geometric.nn import MessagePassing, global_max_pool, global_add_pool, global_mean_pool
 
 # node-centered message passing
 class WDNodeMPNN(nn.Module):
@@ -13,15 +12,24 @@ class WDNodeMPNN(nn.Module):
             node_attr_dim, 
             edge_attr_dim,
             n_message_passing_layers=3,
-            hidden_dim=300
+            hidden_dim=300,
+            dropout_rate=0.1,
+            agg_func="mean"
         ):
-        
+
         super().__init__()
         self.node_attr_dim = node_attr_dim
         self.edge_attr_dim = edge_attr_dim
         self.n_message_passing_layers = n_message_passing_layers
         self.message_passing_layers = nn.ModuleList()
         self.lin0 = nn.Linear(node_attr_dim + edge_attr_dim, hidden_dim)
+
+        assert agg_func in ['mean', 'max', 'add']
+        self.agg_func = {
+           'mean': global_mean_pool,
+           'max': global_max_pool,
+           'add': global_add_pool
+        }[agg_func]
 
         for _ in range(n_message_passing_layers):
             self.message_passing_layers.append(
@@ -65,8 +73,8 @@ class WDNodeMPNN(nn.Module):
         # concatenate the node features with the embedding from the message passing layers
         h = self.final_message_passing_layer(torch.cat([h, x], dim=1), edge_index, edge_weight, h0)
 
-        # node_weight to use stoichiometry
-        graph_embedding = global_mean_pool(h * node_weight.view(-1, 1), data.batch)
+
+        graph_embedding = self.agg_func(h * node_weight.view(-1, 1), data.batch)
 
         out = self.final_mlp(graph_embedding)
         return out.squeeze(1)

@@ -9,7 +9,8 @@ from copy import deepcopy
 from torch_geometric.data import Data
 import torch
 
-def poly_smiles_to_graph(poly_strings, poly_labels_EA, poly_labels_IP):
+# %% Make featurization function
+def poly_smiles_to_graph(poly_strings, poly_labels_EA, poly_labels_IP, no_deg_check=False):
     '''
     Turns adjusted polymer smiles string into PyG data objects
     '''
@@ -44,7 +45,7 @@ def poly_smiles_to_graph(poly_strings, poly_labels_EA, poly_labels_IP):
     m = mol[0]  # RDKit Mol object
     rules = mol[1]  # [str], list of rules for bonds between monomers. i.e. [1-2:0.375:0.375, 1-1:0.375:0.375, ...] 
     # parse rules on monomer connections
-    polymer_info, degree_of_polym = ft.parse_polymer_rules(rules)
+    polymer_info, degree_of_polym = ft.parse_polymer_rules(rules, no_deg_check=no_deg_check)
     # polymer_info = [(1, 2, 0.375, 0.375), (1, 1, 0.375, 0.375), ...]
     # make molecule editable
     rwmol = Chem.rdchem.RWMol(m)
