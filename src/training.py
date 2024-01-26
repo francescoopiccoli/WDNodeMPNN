@@ -43,9 +43,9 @@ def train(model, loader, label, optimizer, criterion):
         out = model(data)
         # Calculate the loss based on the specified label.
         if label == 0: # EA
-            loss = torch.sqrt(criterion(out, data.y_EA.float()))
+            loss = criterion(out, data.y_EA.float())
         elif label == 1: # IP
-            loss = torch.sqrt(criterion(out, data.y_IP.float()))
+            loss = criterion(out, data.y_IP.float())
 
         loss.backward()  
         optimizer.step()
@@ -62,9 +62,9 @@ def test(model, loader, label, criterion):
     for data in loader:
         out = model(data)
         if label == 0: # EA
-            loss = torch.sqrt(criterion(out, data.y_EA.float()))
+            loss = criterion(out, data.y_EA.float())
         elif label == 1: # IP
-            loss = torch.sqrt(criterion(out, data.y_IP.float()))
+            loss = criterion(out, data.y_IP.float())
 
         total_loss += loss.item()
     return total_loss / len(loader)
