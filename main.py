@@ -23,7 +23,7 @@ labels = {
 }
 
 # %% Load data
-graphs = get_graphs()
+graphs = get_graphs(file_csv = 'Data/dataset-poly_chemprop.csv', file_graphs_list = 'Data/Graphs_list.pt')
 
 # shuffle graphs
 random.seed(12345)

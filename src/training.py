@@ -5,12 +5,12 @@ import tqdm
 from src.featurization import poly_smiles_to_graph
 
 
-def get_graphs():
+def get_graphs(file_csv = '../Data/dataset-poly_chemprop.csv', file_graphs_list = 'Graphs_list.pt'):
     graphs = []
     # check if graphs_list.pt exists
-    if not os.path.isfile('Graphs_list.pt'):
+    if not os.path.isfile(file_graphs_list):
         print('Creating Graphs_list.pt')
-        df = pd.read_csv('../Data/dataset-poly_chemprop.csv')
+        df = pd.read_csv(file_csv)
         # use tqdm to show progress bar
         for i in tqdm.tqdm(range(len(df.loc[:, 'poly_chemprop_input']))):
             poly_strings = df.loc[i, 'poly_chemprop_input']
@@ -26,11 +26,11 @@ def get_graphs():
             
             graphs.append(graph)
             
-        torch.save(graphs, 'Graphs_list.pt')
+        torch.save(graphs, file_graphs_list)
         print('Graphs_list.pt saved')
     else:
         print('Loading Graphs_list.pt')
-        graphs = torch.load('Graphs_list.pt')
+        graphs = torch.load(file_graphs_list)
 
     return graphs
 
