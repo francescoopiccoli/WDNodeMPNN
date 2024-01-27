@@ -34,8 +34,9 @@ def visualize_results(store_pred: List, store_true: List, label: str, save_folde
     plt.grid()
     plt.title(f'Electron Affinity' if label == 'ea' else 'Ionization Potential')
 
-    plt.text(-4.1, 0.5, f'R2 = {R2:.3f}', fontsize=10)
-    plt.text(-4.5, 0.2, f'RMSE = {RMSE:.3f}', fontsize=10)
+    plt.text(min(store_true), max(store_pred), f'R2 = {R2:.3f}', fontsize=10)
+    plt.text(min(store_true), max(store_pred) - 0.3, f'RMSE = {RMSE:.3f}', fontsize=10)
+
 
     if save_folder is not None:
         os.makedirs(save_folder, exist_ok=True)
