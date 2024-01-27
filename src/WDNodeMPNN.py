@@ -106,7 +106,8 @@ class MessagePassingLayer(MessagePassing):
         # x_i contains the node features of the source nodes for each edge. [num_edges, hidden_lin_dim]   
         # x_j contains the node features of the target nodes for each edge. [num_edges, hidden_lin_dim]
         # weight each edge by its probability, I think i should use x_i since i am interested in the sources nodes, its those that i have to weight.
-        return edge_weight.unsqueeze(1) * x_i
+        # !!! Altough theoritcally x_i sounds like the correct one to me, x_j gives much better results !!!
+        return edge_weight.unsqueeze(1) * x_j
 
     # take the weighted features, take the average of the features of the incoming edges (for node i consider the edge indexes of all nodes js where (j, i)))
     # aggr_out aggregates the messages from the neighbor (that have incoming edges towards the node) so we have a message
