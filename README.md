@@ -8,7 +8,7 @@ The model obtains the same performance of the edge-centred original version, whi
 The featurization (data preprocessing) and the visualization code was taken from the work done from Tammo Dukker on 'Self-Supervised Graph Neural Networks for Polymer Property Prediction'.
 
 ## Results
-![Alt Text](url/to/image.png)
+![Results](https://raw.githubusercontent.com/francescoopiccoli/WDNodeMPNN/improvements/results.png?token=GHSAT0AAAAAACKBUN5QNFUXAXPI33LTRA5SZNXTJUA)
 
 ## Setup
    ```bash
