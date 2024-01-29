@@ -63,8 +63,7 @@ class WDNodeMPNN(nn.Module):
         incoming_edges_weighted_sum.scatter_add_(0, edge_index_reshaped.expand_as(edge_attr), edge_weight.view(-1, 1) * edge_attr)
         concat_features = torch.cat([x, incoming_edges_weighted_sum], dim=1)
       
-        h0 = self.lin0(concat_features)
-        h0 = F.relu(h0)
+        h0 = F.relu(self.lin0(concat_features))
         h = h0
         for layer in self.message_passing_layers:
             h = layer(h, edge_index, edge_weight, h0)
@@ -79,7 +78,7 @@ class WDNodeMPNN(nn.Module):
         return out.squeeze(1)
 
     
-# https://pytorch-geometric.readthedocs.io/en/latest/tutorial/create_gnn.html#the-messagepassing-base-class
+# https://pytorch-geometric.readthed      ocs.io/en/latest/tutorial/create_gnn.html#the-messagepassing-base-class
 class MessagePassingLayer(MessagePassing):
     def __init__(
             self, 
@@ -97,17 +96,20 @@ class MessagePassingLayer(MessagePassing):
 
     def forward(self, h_t, edge_index, edge_weight, h0):
         # propage will call the message function, then the aggregate (i.e. mean) function, and finally the update function.
-        # [TODO-F] # Check keyword arguments, make sure x_i is not read as x_j
         return self.propagate(edge_index, x=h_t, edge_weight=edge_weight, h0=h0)
 
     
+    # take the features of the source nodes, weight them by the edge weight, and return the weighted features
     # Constructs messages to node i for each edge (j,i) if flow="source_to_target"
-    def message(self, x_i, edge_weight): 
+    # https://github.com/pyg-team/pytorch_geometric/issues/1489
+    def message(self, x_i, x_j, edge_weight): 
         # x_i contains the node features of the source nodes for each edge. [num_edges, hidden_lin_dim]   
         # x_j contains the node features of the target nodes for each edge. [num_edges, hidden_lin_dim]
         # weight each edge by its probability, I think i should use x_i since i am interested in the sources nodes, its those that i have to weight.
-        return edge_weight.unsqueeze(1) * x_i
+        # !!! Altough theoritcally x_i sounds like the correct one to me, x_j gives much better results !!!
+        return edge_weight.unsqueeze(1) * x_j
 
+    # take the weighted features, take the average of the features of the incoming edges (for node i consider the edge indexes of all nodes js where (j, i)))
     # aggr_out aggregates the messages from the neighbor (that have incoming edges towards the node) so we have a message
     # from each incoming edge, and we aggregate messages from incoming neighbors to each node. The message from each neighbor is constructed in message()
     # aggr_out has shape [num_nodes, node_hidden_channels]

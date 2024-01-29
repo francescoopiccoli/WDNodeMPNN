@@ -10,6 +10,7 @@ import pandas as pd
 import tqdm
 from src.training import get_graphs, train, test
 from src.infer import infer, infer_by_dataloader
+from src.hyperparam_optim import hyperparams_optimization
 
 # %% Hyperparameters
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -64,30 +65,40 @@ print(model)
 optimizer = torch.optim.Adam(model.parameters(), lr=hyper_params['learning_rate'])
 criterion = torch.nn.MSELoss()
 epochs = hyper_params['epochs']
-property = 'EA'
+property = 'IP'
 model_save_name = f'{model_name}_{property}'
 
 
-# %% Train model
-for epoch in tqdm.tqdm(range(epochs)):
-    model, train_loss = train(model, train_loader, label=labels[property], optimizer=optimizer, criterion=criterion)
-    test_loss = test(model, test_loader, label=labels[property], criterion=criterion)
 
-    print(f'Epoch: {epoch}, Train Loss: {train_loss:.4f}, Test Loss: {test_loss:.4f}')
 
-    # save model every 20 epochs
-    if epoch % 10 == 0:
-        os.makedirs('Models', exist_ok=True)
-        os.makedirs('Results', exist_ok=True)
+should_optimize = True
 
-        pred, ea, ip = infer_by_dataloader(test_loader, model, device)
+if should_optimize:
+    hyperparams_optimization(
+        train_datalist=train_datalist,
+        test_datalist=test_datalist
+    )
+else:
+    # %% Train model
+    for epoch in tqdm.tqdm(range(epochs)):
+        model, train_loss = train(model, train_loader, label=labels[property], optimizer=optimizer, criterion=criterion)
+        test_loss = test(model, test_loader, label=labels[property], criterion=criterion)
 
-        if labels[property] == 0:
-            visualize_results(pred, ea, label='ea', save_folder=f'Results/{model_save_name}/epoch{epoch}.pt')
-        else:
-            visualize_results(pred, ip, label='ip', save_folder=f'Results/{model_save_name}/epoch{epoch}.pt')
+        print(f'Epoch: {epoch}, Train Loss: {train_loss:.4f}, Test Loss: {test_loss:.4f}')
 
-        torch.save(model.state_dict(), f'Models/{model_save_name}.pt')
-        
-# save latest model
-torch.save(model.state_dict(), f'Models/{model_save_name}.pt')
+        # save model every 20 epochs or last epoch
+        if epoch % 10 == 0 or epoch == epochs - 1:
+            os.makedirs('Models', exist_ok=True)
+            os.makedirs('Results', exist_ok=True)
+
+            pred, ea, ip = infer_by_dataloader(test_loader, model, device)
+
+            if labels[property] == 0:
+                visualize_results(pred, ea, label='ea', save_folder=f'Results/{model_save_name}', epoch=epoch)
+            else:
+                visualize_results(pred, ip, label='ip', save_folder=f'Results/{model_save_name}', epoch=epoch)
+
+            torch.save(model.state_dict(), f'Models/{model_save_name}.pt')
+            
+    # save latest model
+    torch.save(model.state_dict(), f'Models/{model_save_name}.pt')
