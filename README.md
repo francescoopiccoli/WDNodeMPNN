@@ -3,17 +3,17 @@
 ## Description
 This is a node-centred version of the wd-mpnn model proposed by Aldeghi and Coley in the paper 'A graph representation of molecular ensembles for polymer property prediction' (2022). 
 
-The model obtains the same performance of the edge-centred original version, while greatly simplifying the code, and the need to precompute the huge and sparse `edge x edge` and `edge x node` adjacency matrices, hence allowing minibatch shuffling and a cleaner, more elegant and computationally efficient architecture and codebase. 
+The model obtains the same performance of the edge-centred original version, while greatly simplifying the code. No need to precompute the huge and sparse `edge x edge` and `edge x node` adjacency matrices, hence allowing minibatch shuffling, and a cleaner, more elegant and computationally efficient architecture.
 
 The featurization (data preprocessing) and the visualization code was taken from the work done from Tammo Dukker on 'Self-Supervised Graph Neural Networks for Polymer Property Prediction'.
 
 
 ## Method
-![Results](https://raw.githubusercontent.com/francescoopiccoli/WDNodeMPNN/improvements/method.png?token=GHSAT0AAAAAACKBUN5RHOFZ67MY6MFBSDL4ZNXTP5A)
+![Results](/method.png)
 
 
 ## Results
-![Results](https://raw.githubusercontent.com/francescoopiccoli/WDNodeMPNN/improvements/results.png?token=GHSAT0AAAAAACKBUN5QNFUXAXPI33LTRA5SZNXTJUA)
+![Results](/results.png)
 
 
 ## Setup
