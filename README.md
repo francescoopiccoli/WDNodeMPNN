@@ -30,5 +30,4 @@ To change the predicted property, set this line to `'EA'` in `main.py`:
 property = 'IP'
 ```
 
-To run hyperparamater optimization, set `should_optimize` variable to `True` in `main.py`:
-
+To run hyperparamater optimization, set `should_optimize` variable to `True` in `main.py`.

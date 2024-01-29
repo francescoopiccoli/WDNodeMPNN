@@ -69,9 +69,7 @@ property = 'IP'
 model_save_name = f'{model_name}_{property}'
 
 
-
-
-should_optimize = True
+should_optimize = False
 
 if should_optimize:
     hyperparams_optimization(
