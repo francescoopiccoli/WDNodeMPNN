@@ -78,7 +78,7 @@ class WDNodeMPNN(nn.Module):
         return out.squeeze(1)
 
     
-# https://pytorch-geometric.readthed      ocs.io/en/latest/tutorial/create_gnn.html#the-messagepassing-base-class
+# https://pytorch-geometric.readthedocs.io/en/latest/tutorial/create_gnn.html#the-messagepassing-base-class
 class MessagePassingLayer(MessagePassing):
     def __init__(
             self, 
@@ -103,15 +103,12 @@ class MessagePassingLayer(MessagePassing):
     # Constructs messages to node i for each edge (j,i) if flow="source_to_target"
     # https://github.com/pyg-team/pytorch_geometric/issues/1489
     def message(self, x_i, x_j, edge_weight): 
-        # x_i contains the node features of the source nodes for each edge. [num_edges, hidden_lin_dim]   
-        # x_j contains the node features of the target nodes for each edge. [num_edges, hidden_lin_dim]
-        # weight each edge by its probability, I think i should use x_i since i am interested in the sources nodes, its those that i have to weight.
-        # !!! Altough theoritcally x_i sounds like the correct one to me, x_j gives much better results !!!
+        # x_i contains the node features of the target nodes 'i's for each edge (j,i). [num_edges, node_i_feats]   
+        # x_j contains the node features of the source nodes 'j's for each edge (j, i). [num_edges, node_j_feats]
+        # weight each edge by its probability, use x_j since i am interested in the sources nodes.
         return edge_weight.unsqueeze(1) * x_j
 
-    # take the weighted features, take the average of the features of the incoming edges (for node i consider the edge indexes of all nodes js where (j, i)))
-    # aggr_out aggregates the messages from the neighbor (that have incoming edges towards the node) so we have a message
-    # from each incoming edge, and we aggregate messages from incoming neighbors to each node. The message from each neighbor is constructed in message()
+    # aggregates (take mean) of the incoming nodes weighted features (for node 'i' consider all nodes js where (j, i))
     # aggr_out has shape [num_nodes, node_hidden_channels]
     def update(self, aggr_out, h0):
         # aggr_out contains the output of aggregation. [num_nodes, node_hidden_channels]
