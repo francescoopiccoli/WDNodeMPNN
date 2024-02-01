@@ -3,13 +3,11 @@ import random
 import time
 from torch_geometric.loader import DataLoader
 import string
-from src.Analyse_Results import visualize_results
 from src.WDNodeMPNN import WDNodeMPNN
 import os
-import pandas as pd
 import tqdm
 from src.training import get_graphs, train, test
-from src.infer import infer, infer_by_dataloader
+from src.infer_and_visualize import infer_by_dataloader, visualize_results
 from src.hyperparam_optim import hyperparams_optimization
 
 # %% Hyperparameters
@@ -68,7 +66,7 @@ epochs = hyper_params['epochs']
 property = 'IP'
 model_save_name = f'{model_name}_{property}'
 
-should_optimize = True
+should_optimize = False
 
 if should_optimize:
     hyperparams_optimization(

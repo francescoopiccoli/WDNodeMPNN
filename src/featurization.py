@@ -56,26 +56,26 @@ def poly_smiles_to_graph(poly_strings, poly_labels_EA, poly_labels_IP, no_deg_ch
     rwmol = Chem.rdchem.RWMol(m)
     # tag (i) attachment atoms and (ii) atoms for which features needs to be computed
     # also get map of R groups to bonds types, e.f. r_bond_types[*1] -> SINGLEw
-    rwmol, r_bond_types = ft.tag_atoms_in_repeating_unit(rwmol) # rwmol is never modified in the called function, so its the same as the one given as input
+    rwmol, r_bond_types = ft.tag_atoms_in_repeating_unit(rwmol) 
+    # the returned rwmol as the * nodes tagged not core and the others as core, and the attachment atoms tagged via a R property
     # r_bond_types = {'*1' -> 'SINGLE', '*2' -> 'SINGLE', '*3' -> 'SINGLE', '*4' -> 'SINGLE'}
 
     # -----------------
     # Get atom features
     # -----------------
-    # for all 'core' atoms, i.e. not R groups, as tagged before. Do this here so that atoms linked to
-    # R groups have the correct saturation
+    # for all 'core' atoms, i.e. not R groups (namely the nodes with *), as tagged before. Do this here so that atoms linked to
+    # R groups (* nodes) have the correct saturation
     f_atoms = [ft.atom_features(atom) for atom in rwmol.GetAtoms() if atom.GetBoolProp('core') is True]
     w_atoms = [atom.GetDoubleProp('w_frag') for atom in rwmol.GetAtoms() if atom.GetBoolProp('core') is True]
 
     n_atoms = len(f_atoms)
 
-    # remove R groups -> now atoms in rdkit Mol object have the same order as self.f_atoms
+    # remove R groups (* nodes) -> now atoms in rdkit Mol object have the same order as self.f_atoms
     rwmol = ft.remove_wildcard_atoms(rwmol)
 
     # Initialize atom to bond mapping for each atom
     for _ in range(n_atoms):
         a2b.append([])
-    rwmol
 
     # ---------------------------------------
     # Get bond features for separate monomers
@@ -104,7 +104,7 @@ def poly_smiles_to_graph(poly_strings, poly_labels_EA, poly_labels_IP, no_deg_ch
             b2a.append(a2)
             b2revb.append(b2) # here we do the reverse to track the bond to the atom that that is being reached
             b2revb.append(b1)
-            w_bonds.extend([1.0, 1.0])  # edge weights of 1.0
+            w_bonds.extend([1.0, 1.0])  # edge weights of 1.0 (intra monomer bonds have all weight of 1)
             n_bonds += 2
 
     # ---------------------------------------------------
@@ -121,7 +121,7 @@ def poly_smiles_to_graph(poly_strings, poly_labels_EA, poly_labels_IP, no_deg_ch
     _ = [a.SetBoolProp('OrigMol', False) for a in rwmol_copy.GetAtoms()]
 
     # create an editable combined molecule
-    cm = Chem.CombineMols(rwmol, rwmol_copy)
+    cm = Chem.CombineMols(rwmol, rwmol_copy) # cm contains each atom and bond of the polymer twice,
     cm = Chem.RWMol(cm)
 
     # for all possible bonds between monomers:
@@ -134,7 +134,7 @@ def poly_smiles_to_graph(poly_strings, poly_labels_EA, poly_labels_IP, no_deg_ch
         _a2 = None  # idx of atom 1 in cm --> to be used by RDKit
         for atom in cm.GetAtoms():
             # take a1 from a fragment in the original molecule object
-            if f'*{r1}' in atom.GetProp('R') and atom.GetBoolProp('OrigMol') is True:
+            if f'*{r1}' in atom.GetProp('R') and atom.GetBoolProp('OrigMol') is True: # in tag_atoms_in_repeating_unit we added a R property to the attachment atoms, i.e. atom c1 will have R prop = *1
                 a1 = atom.GetIdx()
             # take _a2 from a fragment in the copied molecule object, but a2 from the original
             if f'*{r2}' in atom.GetProp('R'):
@@ -180,18 +180,6 @@ def poly_smiles_to_graph(poly_strings, poly_labels_EA, poly_labels_IP, no_deg_ch
         cm.RemoveBond(a1, _a2)
         Chem.SanitizeMol(cm, Chem.SanitizeFlags.SANITIZE_ALL)
 
-    # ------------------
-    # Make ensemble molecular weight for self-supervised learning
-    # ------------------
-
-    # monomer_smiles = poly_input.split("|")[0].split('.')
-    # monomer_weights = poly_input.split("|")[1:-1]
-
-    # mol_mono_1 = make_mol(monomer_smiles[0], 0, 0)
-    # mol_mono_2 = make_mol(monomer_smiles[1], 0, 0)
-
-    # M_ensemble = float(monomer_weights[0]) * Descriptors.ExactMolWt(
-    #     mol_mono_1) + float(monomer_weights[1]) * Descriptors.ExactMolWt(mol_mono_2)
 
     # -------------------------------------------
     # Make own pytroch geometric data object. Here we try follow outputs of above featurization: f_atoms, f_bonds, a2b, b2a
@@ -203,7 +191,7 @@ def poly_smiles_to_graph(poly_strings, poly_labels_EA, poly_labels_IP, no_deg_ch
     for i in range(n_atoms):
         X[i, :] = torch.FloatTensor(f_atoms[i])
     # associated atom weights we alread found
-    node_weight = torch.FloatTensor(w_atoms)
+    node_weights = torch.FloatTensor(w_atoms)
 
     # get edge_index and associated edge attribute and edge weight
     # edge index is of shape [2, num_edges],  edge_attribute of shape [num_edges, num_bond_features], edge_weights = [num_edges]
@@ -213,17 +201,19 @@ def poly_smiles_to_graph(poly_strings, poly_labels_EA, poly_labels_IP, no_deg_ch
     for i in range(n_atoms):
         # pick atom
         atom = torch.LongTensor([i])
-        # find number of bonds to that atom. a2b is mapping from atom to bonds
+        # find number of INCOMING bonds into that atom. a2b is mapping from atom to incoming bonds
         num_bonds = len(a2b[i])
 
         # create graph connectivivty for that atom
-        atom_repeat = atom.repeat(1, num_bonds)
+        atom_repeat = atom.repeat(1, num_bonds) # [idx_atom, idx_atom, idx_atom, ...]
         # a2b is mapping from atom to incoming bonds, need b2a to map these bonds to atoms they originated from
-        neigh_atoms = [b2a[bond] for bond in a2b[i]]
-        edges = torch.LongTensor(neigh_atoms).reshape(1, num_bonds)
-        edge_idx_atom = torch.cat((atom_repeat, edges), dim=0)
+        neigh_atoms = [b2a[bond] for bond in a2b[i]]  # a2b[i] returns the list of bond indexes that are incoming to atom i, b2a[bond] returns the atom index that the bond originated from, indeed b2a at position bond has saved the atom index that the bond at position bond is coming from
+        edges = torch.LongTensor(neigh_atoms).reshape(1, num_bonds) # [idx_neigh1, idx_neigh2, idx_neigh3, ...]
+        edge_idx_atom = torch.cat((atom_repeat, edges), dim=0) 
+        #[[idx_atom, idx_atom, idx_atom, ...], [idx_neigh1, idx_neigh2, idx_neigh3, ...]
         # append connectivity of atom to edge_index
-        edge_index = torch.cat((edge_index, edge_idx_atom), dim=1)
+        edge_index = torch.cat((edge_index, edge_idx_atom), dim=1) # append the edge index of the atom to the edge index of the whole molecule
+        # [[idx_atom, idx_atom, idx_atom, ..., idx2_atom ...], [idx_neigh1, idx_neigh2, idx_neigh3, ..., idx2_neigh1 ...]
 
         # Find weight of bonds
         # weight of bonds attached to atom
@@ -236,7 +226,7 @@ def poly_smiles_to_graph(poly_strings, poly_labels_EA, poly_labels_IP, no_deg_ch
 
     # create PyG Data object
     graph = Data(x=X, edge_index=edge_index, edge_attr=edge_attr,
-                 y_EA=poly_labels_EA, y_IP=poly_labels_IP, node_weight=node_weight, edge_weight=edge_weights) # , M_ensemble=M_ensemble
+                 y_EA=poly_labels_EA, y_IP=poly_labels_IP, node_weight=node_weights, edge_weight=edge_weights) # , M_ensemble=M_ensemble
 
     return graph
 

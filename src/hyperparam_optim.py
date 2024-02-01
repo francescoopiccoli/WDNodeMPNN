@@ -2,8 +2,6 @@ import optuna
 import torch
 from torch_geometric.loader import DataLoader as pyg_DataLoader
 import tqdm
-import os
-import sys
 from src.training import train, test
 from src.WDNodeMPNN import WDNodeMPNN
 
@@ -45,18 +43,15 @@ def hyperparams_optimization(
 
         criterion = torch.nn.MSELoss()
 
-        early_stop = 0
         losses = []
         val_losses = []
 
         for epoch in tqdm.tqdm(range(num_epochs)): #args epochs
-            epoch_loss = 0.0
-            epoch_val_loss = 0.0
             model.train()
             avg_epoch_loss = train(model=model, loader=train_dataloader, label=label, optimizer=optimizer, criterion=criterion)[1]
 
             model.eval()
-            avg_epoch_val_loss = test(model=model, loader=train_dataloader, label=label, criterion=criterion)
+            avg_epoch_val_loss = test(model=model, loader=val_dataloader, label=label, criterion=criterion)
 
             losses.append(avg_epoch_loss)
             val_losses.append(avg_epoch_val_loss)
