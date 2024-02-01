@@ -68,9 +68,6 @@ epochs = hyper_params['epochs']
 property = 'IP'
 model_save_name = f'{model_name}_{property}'
 
-
-
-
 should_optimize = True
 
 if should_optimize:

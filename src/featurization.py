@@ -2,12 +2,17 @@
 '''
 Here I turn my own implementation of the featurization into a function. Input is an adjusted smiles string output is a PyG Data object (graph) with atom and bond weights
 '''
+import rdkit
+
+# from torch_geometric.data import Data
+
 import src.featurization_helper as ft
 from rdkit import Chem
-from rdkit.Chem import Descriptors
 from copy import deepcopy
-from torch_geometric.data import Data
 import torch
+
+# from torch_geometric.data import Data
+# import torch
 
 # %% Make featurization function
 def poly_smiles_to_graph(poly_strings, poly_labels_EA, poly_labels_IP, no_deg_check=False):
@@ -255,6 +260,11 @@ def make_mol(s: str, keep_h: bool, add_h: bool):
     return mol
 
 
+def mark_monomer_atoms(mol: rdkit.Chem.rdchem.Mol, monomer_num: int):
+    for atom in mol.GetAtoms():
+        atom.SetIntProp('monomer', monomer_num)
+
+
 def make_polymer_mol(smiles: str, keep_h: bool, add_h: bool, fragment_weights: list):
     """
     Builds an RDKit molecule from a SMILES string.
@@ -282,9 +292,14 @@ def make_polymer_mol(smiles: str, keep_h: bool, add_h: bool, fragment_weights: l
 
     # combine all mols into single mol object
     mol = mols.pop(0)
+    mark_monomer_atoms(mol, 0)
+
+    i = 1
     while len(mols) > 0:
         m2 = mols.pop(0)
+        mark_monomer_atoms(m2, i)
         mol = Chem.CombineMols(mol, m2) # use rdkit to combine the individual monomer rdkit mol objects into a single rdkit mol object, without adding bonds between them for now
+        i += 1
 
     return mol
 
