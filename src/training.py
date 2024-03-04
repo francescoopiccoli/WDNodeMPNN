@@ -2,7 +2,7 @@ import os
 import pandas as pd
 import torch
 import tqdm
-from src.featurization import poly_smiles_to_graph
+from featurization import poly_smiles_to_graph
 
 
 def get_graphs(file_csv = 'Data/dataset-poly_chemprop.csv', file_graphs_list = 'Data/Graphs_list.pt'):

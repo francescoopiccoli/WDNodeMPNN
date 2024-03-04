@@ -2,8 +2,8 @@ import optuna
 import torch
 from torch_geometric.loader import DataLoader as pyg_DataLoader
 import tqdm
-from src.training import train, test
-from src.WDNodeMPNN import WDNodeMPNN
+from training import train, test
+from WDNodeMPNN import WDNodeMPNN
 
 # Hyperparameter optimization
 def hyperparams_optimization(

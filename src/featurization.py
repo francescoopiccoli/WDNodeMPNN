@@ -6,7 +6,7 @@ import rdkit
 
 # from torch_geometric.data import Data
 
-import src.featurization_helper as ft
+import featurization_helper as ft
 from rdkit import Chem
 from copy import deepcopy
 import torch
