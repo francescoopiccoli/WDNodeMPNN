@@ -2,6 +2,8 @@
 '''
 Here I turn my own implementation of the featurization into a function. Input is an adjusted smiles string output is a PyG Data object (graph) with atom and bond weights
 '''
+from typing import List
+
 import rdkit
 
 # from torch_geometric.data import Data
@@ -255,6 +257,29 @@ def mark_monomer_atoms(mol: rdkit.Chem.rdchem.Mol, monomer_num: int):
         atom.SetIntProp('monomer', monomer_num)
 
 
+def make_polymer_mol_by_frags(smiles: List[str], keep_h: bool, add_h: bool, fragment_weights: list):
+    # if it all looks good, we create one molecule object per fragment (monomer), add the weight (stoichiometry ratio) as property
+    # of each atom, and merge fragments into a single molecule object
+    mols = []
+    for s, w in zip(smiles, fragment_weights): # i.e. (*:1]c1cc(F)c([*:2])cc1F, 0.5)
+        m = make_mol(s, keep_h, add_h) # creates rdkit mol object from smiles string
+        for a in m.GetAtoms():
+            a.SetDoubleProp('w_frag', float(w))
+        mols.append(m) # mols will contain 2 mol objects, one for each monomer (in case of a copolymer of 2 monomers, which is the unique case in the full dataset)
+
+    # combine all mols into single mol object
+    mol = mols.pop(0)
+    mark_monomer_atoms(mol, 0)
+
+    i = 1
+    while len(mols) > 0:
+        m2 = mols.pop(0)
+        mark_monomer_atoms(m2, i)
+        mol = Chem.CombineMols(mol, m2) # use rdkit to combine the individual monomer rdkit mol objects into a single rdkit mol object, without adding bonds between them for now
+        i += 1
+
+    return mol
+
 def make_polymer_mol(smiles: str, keep_h: bool, add_h: bool, fragment_weights: list):
     """
     Builds an RDKit molecule from a SMILES string.
@@ -271,26 +296,6 @@ def make_polymer_mol(smiles: str, keep_h: bool, add_h: bool, fragment_weights: l
         raise ValueError(f'number of input monomers/fragments ({num_frags}) does not match number of '
                          f'input number of weights ({len(fragment_weights)})')
 
-    # if it all looks good, we create one molecule object per fragment (monomer), add the weight (stoichiometry ratio) as property
-    # of each atom, and merge fragments into a single molecule object
-    mols = []
-    for s, w in zip(smiles.split('.'), fragment_weights): # i.e. (*:1]c1cc(F)c([*:2])cc1F, 0.5)
-        m = make_mol(s, keep_h, add_h) # creates rdkit mol object from smiles string
-        for a in m.GetAtoms():
-            a.SetDoubleProp('w_frag', float(w)) 
-        mols.append(m) # mols will contain 2 mol objects, one for each monomer (in case of a copolymer of 2 monomers, which is the unique case in the full dataset)
-
-    # combine all mols into single mol object
-    mol = mols.pop(0)
-    mark_monomer_atoms(mol, 0)
-
-    i = 1
-    while len(mols) > 0:
-        m2 = mols.pop(0)
-        mark_monomer_atoms(m2, i)
-        mol = Chem.CombineMols(mol, m2) # use rdkit to combine the individual monomer rdkit mol objects into a single rdkit mol object, without adding bonds between them for now
-        i += 1
-
-    return mol
+    return make_polymer_mol_by_frags(smiles.split("."), keep_h, add_h, fragment_weights)
 
 # %%
