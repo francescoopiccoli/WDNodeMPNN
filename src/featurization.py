@@ -6,7 +6,7 @@ from typing import List
 
 import rdkit
 
-# from torch_geometric.data import Data
+from torch_geometric.data import Data
 
 import featurization_helper as ft
 from rdkit import Chem
